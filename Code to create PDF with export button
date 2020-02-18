@@ -1,0 +1,91 @@
+$j( "#export" ).click(function() {
+
+var i = 1;
+var count = 0;
+var zip = new JSZip();
+
+    $j.each(ultraQAData, function (index, value) {
+      var initialDoc = new jsPDF();
+      var docValues = createPDFFile(value, initialDoc);
+      var finishedDoc = docValues[0];
+      var docName = docValues[1];
+      zip.file(docName + '.pdf', finishedDoc.output('blob'));  
+      i += 1;
+      count  += 1;
+      if (count  == ultraQAData.length) {
+         zip.generateAsync({type:'blob'}).then(function(content) {
+            saveAs(content, "NatWest Digitised DCOM Reports");
+         });
+      }
+      initialDoc.internal.events.subscribe('addPage', function() { 
+		debugger;
+		console.log("addPage subscribed successfully");
+		var img=new Image();
+		img.src = './attachment_dw.action?attachmentId=51p50q51q50p52i49i51n';
+		pageSize = view.initialDoc.internal.pageSize; 
+		initialDoc.addImage(img, 'PNG', 0, 0, pageSize.width, pageSize.height); 
+	 });        
+    });
+});
+
+document.addEventListener('addPage', function (e) {
+        console.log("Event sub");
+		var img=new Image();
+		img.src = './attachment_dw.action?attachmentId=51p50q51q50p52i49i51n';
+		pageSize = view.initialDoc.internal.pageSize; 
+		initialDoc.addImage(img, 'PNG', 0, 0, pageSize.width, pageSize.height); 
+	 });        
+
+});
+
+function createPDFFile(record, initialDoc) {
+
+//<![CDATA[
+for (i = 0; i < record[0].length; ++i) {
+	var value = record[0][i];
+    if (value.substring(0).includes("ID")) {
+       var ID = value.substring(0).replace("ID ", "")
+    }
+    else if (value.substring(0).includes("Project Name")) {
+       var projectName = value.substring(0).replace("Project Name ", "")
+    }
+    else if (value.substring(0).includes("Document name")) {
+       var documentName = value.substring(0).replace("Document name ", "")
+    }
+}
+//]]>
+record[0].splice(3, 3);
+
+initialDoc.text(20, 20, 'Document Name: ' + documentName);
+initialDoc.text(20, 30, 'Project Name: ' + projectName);
+//};
+
+var headers = record[0];
+record.shift();
+
+var img=new Image();
+img.src = './attachment_dw.action?attachmentId=51p50q51q50p52i49i51n';
+initialDoc.addImage(img, 'PNG', 15, 40, 180, 160);
+
+initialDoc.addPage();
+
+
+     
+initialDoc.autoTable({        
+        head: [headers],
+        body: record,
+        rowPageBreak: 'avoid',   
+        columnStyles: {
+    		0: {cellWidth: 40},
+    		1: {cellWidth: 60},
+            2: {cellWidth: 50}},
+        willDrawCell: function (data) {
+        	if (data.cell.raw === "No") {
+                //debugger;
+            	initialDoc.setFillColor(239, 154, 154);
+        	}
+    	}
+        });        
+
+return [initialDoc, ID];
+}
